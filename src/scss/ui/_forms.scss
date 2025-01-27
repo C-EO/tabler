@@ -24,7 +24,7 @@ Form label
 .form-label-description {
   float: right;
   font-weight: var(--#{$prefix}font-weight-normal);
-  color: var(--#{$prefix}muted);
+  color: $form-secondary-color;
 }
 
 /**
@@ -32,7 +32,7 @@ Form hint
  */
 .form-hint {
   display: block;
-  color: var(--#{$prefix}muted);
+  color: $form-secondary-color;
 
   &:last-child {
     margin-bottom: 0;
@@ -50,6 +50,7 @@ Form hint
   .form-control + &,
   .form-select + & {
     margin-top: .5rem;
+    color: $form-secondary-color;
   }
 }
 
@@ -69,11 +70,12 @@ Form control
   &:-webkit-autofill {
     box-shadow: 0 0 0 1000px var(--#{$prefix}body-bg) inset;
     color: var(--#{$prefix}body-color);
+    -webkit-text-fill-color: var(--#{$prefix}body-color);
   }
 
   &:disabled,
   &.disabled {
-    color: var(--#{$prefix}muted);
+    color: $form-secondary-color;
     user-select: none;
   }
 
@@ -128,6 +130,10 @@ Form control
   border-radius: var(--#{$prefix}border-radius);
 }
 
+fieldset:empty {
+  display: none;
+}
+
 /**
 Form help
  */
@@ -139,7 +145,7 @@ Form help
   width: 1.125rem;
   height: 1.125rem;
   font-size: .75rem;
-  color: var(--#{$prefix}muted);
+  color: $form-secondary-color;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
@@ -160,6 +166,16 @@ Form help
 /**
 Input group
  */
+.input-group {
+  box-shadow: $input-box-shadow;
+  border-radius: $input-border-radius;
+
+  .form-control,
+  .btn {
+    box-shadow: none;
+  }
+}
+
 .input-group-link {
   font-size: $h5-font-size;
 }

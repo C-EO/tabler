@@ -18,20 +18,18 @@ const gulp = require('gulp'),
 	vinylSource = require('vinyl-source-stream'),
 	vinylBuffer = require('vinyl-buffer'),
 	browserSync = require('browser-sync'),
-	glob = require('glob'),
 	spawn = require('cross-spawn'),
-	fs = require('fs'),
 	path = require('path'),
-	YAML = require('yaml'),
 	yargs = require('yargs/yargs'),
 	cp = require('child_process'),
 	pkg = require('./package.json'),
 	year = new Date().getFullYear(),
+	replace = require('gulp-replace'),
 	argv = yargs(process.argv).argv
 
 let BUILD = false,
-	distDir = './.tmp',
-	demoDir = './.tmp',
+	distDir = './dist',
+	demoDir = './demo',
 	srcDir = './src'
 
 /**
@@ -39,9 +37,6 @@ let BUILD = false,
  */
 gulp.task('build-on', (cb) => {
 	BUILD = true
-	distDir = './dist'
-	demoDir = './demo'
-
 	cb()
 })
 
@@ -61,101 +56,6 @@ const getBanner = () => {
 }
 
 /**
- * Array.flat polyfill
- */
-if (!Array.prototype.flat) {
-	Object.defineProperty(Array.prototype, 'flat', {
-		value: function (depth = 1) {
-			return this.reduce(function (flat, toFlatten) {
-				return flat.concat((Array.isArray(toFlatten) && (depth > 1)) ? toFlatten.flat(depth - 1) : toFlatten)
-			}, [])
-		}
-	})
-}
-
-/**
- * Import tabler-icons form npm and generate Jekyll `.yml` data files
- */
-gulp.task('svg-icons', (cb) => {
-	const prepareSvgFile = (svg) => {
-		return svg.replace(/\n/g, '').replace(/>\s+</g, '><')
-	}
-
-	const generateIconsYml = (dir, filename) => {
-		const files = glob.sync(dir)
-		let svgList = {}
-
-		files.forEach((file) => {
-			const basename = path.basename(file, '.svg')
-			svgList[basename] = prepareSvgFile(fs.readFileSync(file).toString())
-		})
-
-		fs.writeFileSync(filename, YAML.stringify(svgList))
-	}
-
-	generateIconsYml("./node_modules/@tabler/icons/icons/*.svg", `${srcDir}/pages/_data/icons.yml`)
-
-	cb()
-})
-
-/**
- * Generate CHANGELOG.md
- */
-gulp.task('changelog', (cb) => {
-	const content = YAML.parse(fs.readFileSync('./src/pages/_data/changelog.yml', 'utf8'))
-	let readme = `# Changelog
-
-All notable changes to this project will be documented in this file.\n`
-
-	content.forEach((change) => {
-		readme += `\n\n## \`${change.version}\` - ${change.date}\n\n`
-
-		if(change.description) {
-			readme += `**${change.description}**\n\n`
-		}
-
-		change.changes.forEach((line) => {
-			readme += `- ${line}\n`
-		})
-
-		console.log(change.version);
-	})
-
-	fs.writeFileSync('CHANGELOG.md', readme)
-
-	cb()
-})
-
-/**
- * Check unused Jekyll partials
- */
-gulp.task('unused-files', (cb) => {
-	let foundFiles = []
-
-	glob.sync(`${srcDir}/pages/**/*.{html,md}`).forEach((file) => {
-		let fileContent = fs.readFileSync(file)
-
-		fileContent.toString().replace(/\{% include(_cached)? ([a-z0-9\/_-]+\.html)/g, (f, c, filename) => {
-			filename = `${srcDir}/pages/_includes/${filename}`
-
-			if (!foundFiles.includes(filename)) {
-				foundFiles.push(filename)
-			}
-		})
-	})
-
-	let includeFiles = glob.sync(`${srcDir}/pages/_includes/**/*.html`)
-
-	includeFiles.forEach((file) => {
-		if (!foundFiles.includes(file)) {
-			console.log('file', file)
-		}
-	})
-
-	cb()
-})
-
-/**
  * Clean `dist` folder before build
  */
 gulp.task('clean-dirs', () => {
@@ -164,19 +64,15 @@ gulp.task('clean-dirs', () => {
 		.pipe(clean())
 })
 
-gulp.task('clean-jekyll', (cb) => {
-	return spawn('bundle', ['exec', 'jekyll', 'clean'], { stdio: 'inherit' })
-		.on('close', cb)
-})
-
 /**
  * Compile SASS to CSS and move it to dist directory
  */
 gulp.task('sass', () => {
 	return gulp
-		.src(argv.withPlugins || BUILD ? `${srcDir}/scss/!(_)*.scss` : `${srcDir}/scss/+(tabler|demo).scss`)
+		.src(`${srcDir}/scss/!(_)*.scss`)
 		.pipe(debug())
 		.pipe(sass({
+			includePaths: ['node_modules'],
 			style: 'expanded',
 			precision: 7,
 			importer: (url, prev, done) => {
@@ -186,7 +82,10 @@ gulp.task('sass', () => {
 
 				return { file: url }
 			},
-		}).on('error', sass.logError))
+		}))
+			.on('error', function (err) {
+				throw err;
+			})
 		.pipe(postcss([
 			require('autoprefixer'),
 		]))
@@ -285,7 +184,7 @@ gulp.task('js-demo', () => {
 })
 
 gulp.task('js-demo-theme', () => {
-	 return compileJs('demo-theme')
+	return compileJs('demo-theme')
 })
 
 /**
@@ -343,27 +242,27 @@ gulp.task('mjs', () => {
 })
 
 /**
- * Watch Jekyll files and build it to demo directory
+ * Watch eleventy files and build it to demo directory
  */
-gulp.task('watch-jekyll', (cb) => {
-	browserSync.notify('Building Jekyll')
-	return spawn('bundle', ['exec', 'jekyll', 'build', '--watch', '--incremental', '--destination', demoDir, '--trace'], { stdio: 'inherit' })
+gulp.task('watch-eleventy', (cb) => {
+	browserSync.notify('Building eleventy')
+	return spawn('pnpm', ['run', 'watch:html'], { stdio: 'inherit' })
 		.on('close', cb)
 })
 
 /**
- * Build Jekyll files do demo directory
+ * Build eleventy files do demo directory
  */
-gulp.task('build-jekyll', (cb) => {
+gulp.task('build-eleventy', (cb) => {
 	var env = Object.create(process.env)
 
 	if (argv.preview) {
-		env.JEKYLL_ENV = 'preview'
+		env.eleventy_ENV = 'preview'
 	} else {
-		env.JEKYLL_ENV = 'production'
+		env.eleventy_ENV = 'production'
 	}
 
-	return spawn('bundle', ['exec', 'jekyll', 'build', '--destination', demoDir, '--trace', '--config', '_config.yml,_config_prod.yml'], {
+	return spawn('pnpm', ['run', 'build:html'], {
 		env: env,
 		stdio: 'inherit'
 	})
@@ -408,10 +307,9 @@ gulp.task('browser-sync', () => {
 			baseDir: demoDir,
 			routes: {
 				'/node_modules': 'node_modules',
-				'/dist/css': `${distDir}/css`,
-				'/dist/js': `${distDir}/js`,
 				'/dist/img': `${srcDir}/img`,
 				'/static': `${srcDir}/static`,
+				'/dist': `${distDir}`,
 			},
 		},
 		port: 3000,
@@ -438,16 +336,16 @@ gulp.task('copy-libs', (cb) => {
 		files.push(Array.isArray(allLibs.css[lib]) ? allLibs.css[lib] : [allLibs.css[lib]])
 	})
 
-  Object.keys(allLibs['js-copy']).forEach((lib) => {
-	 files.push(allLibs['js-copy'][lib])
-  })
+	Object.keys(allLibs['js-copy']).forEach((lib) => {
+		files.push(allLibs['js-copy'][lib])
+	})
 
 	files = files.flat()
 
 	files.forEach((file) => {
 		if (!file.match(/^https?/)) {
 			let dirname = path.dirname(file).replace('@', '')
-			let cmd = `mkdir -p "${distDir}/libs/${dirname}" && cp -r node_modules/${dirname}/* ${distDir}/libs/${dirname}`
+			let cmd = `mkdir -p "${distDir}/libs/${dirname}" && cp -r node_modules/${path.dirname(file)}/* ${distDir}/libs/${dirname}`
 
 			cp.exec(cmd)
 		}
@@ -489,13 +387,14 @@ gulp.task('copy-dist', () => {
 gulp.task('add-banner', () => {
 	return gulp.src(`${distDir}/{css,js}/**/*.{js,css}`)
 		.pipe(header(getBanner()))
+		.pipe(replace(/^([\s\S]+)(@charset "UTF-8";)\n?/, '$2\n$1'))
 		.pipe(gulp.dest(`${distDir}`))
 })
 
-gulp.task('clean', gulp.series('clean-dirs', 'clean-jekyll'))
+gulp.task('clean', gulp.series('clean-dirs'))
 
-gulp.task('start', gulp.series('clean', 'sass', 'js', gulp.parallel('js-demo', 'js-demo-theme'), 'mjs', 'build-jekyll', gulp.parallel('watch-jekyll', 'watch', 'browser-sync')))
+gulp.task('start', gulp.series('clean', 'sass', 'js', gulp.parallel('js-demo', 'js-demo-theme'), 'mjs', 'build-eleventy', gulp.parallel('watch-eleventy', 'watch', 'browser-sync')))
 
 gulp.task('build-core', gulp.series('build-on', 'clean', 'sass', 'css-rtl', 'css-minify', 'js', gulp.parallel('js-demo', 'js-demo-theme'), 'mjs', 'copy-images', 'copy-libs', 'add-banner'))
-gulp.task('build-demo', gulp.series('build-on', 'build-jekyll', 'copy-static', 'copy-dist', 'build-cleanup', 'build-purgecss'))
+gulp.task('build-demo', gulp.series('build-on', 'build-eleventy', 'copy-static', 'copy-dist', 'build-cleanup', 'build-purgecss'))
 gulp.task('build', gulp.series('build-core', 'build-demo'))

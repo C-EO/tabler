@@ -1,25 +1,29 @@
 {
   "name": "@tabler/core",
-  "version": "1.0.0-beta16",
+  "version": "1.0.0-beta24",
   "description": "Premium and Open Source dashboard template with responsive and high quality UI.",
   "homepage": "https://tabler.io",
   "scripts": {
+    "dev": "pnpm run start",
     "start": "gulp start",
-    "start-plugins": "gulp start --with-plugins",
     "build": "gulp build",
+    "build-docs": "mkdir public && touch public/index.html && echo 'ok'",
     "preview": "gulp build --preview",
     "svg-optimize": "svgo -f svg/brand --pretty",
-    "unused-files": "node build/unused-files.js",
+    "unused-files": "node .build/unused-files.js",
     "release": "release-it",
-    "svg-icons": "gulp svg-icons",
-    "percy": "gulp build && npx percy snapshot demo",
+    "svg-icons": "node .build/import-icons.js",
     "bundlewatch": "bundlewatch",
-    "chromatic": "chromatic --project-token=CHROMATIC_PROJECT_TOKEN",
     "storybook": "start-storybook -p 6006",
-    "changelog": "gulp changelog",
-    "icons": "ncu -u @tabler/icons && npm install && gulp svg-icons && git add . && git commit -am \"update icons to v`npm info @tabler/icons version`\" && git push",
-    "download-images": "node build/download-images.js",
-    "optimize-images": "for i in ./src/static/photos/*.jpg; do convert \"$i\" -quality 80% \"${i%.jpg}.jpg\"; done"
+    "changelog": "node .build/changelog.js",
+    "icons": "git checkout dev && BRANCH_NAME=\"dev-tabler-icons-`pnpm info @tabler/icons version`\" && git branch $BRANCH_NAME && git checkout $BRANCH_NAME && ncu -u @tabler/icons && pnpm install && pnpm run svg-icons && git add . && git commit -am \"update icons to v`pnpm info @tabler/icons version`\" && git push origin $BRANCH_NAME && git checkout dev",
+    "download-images": "node .build/download-images.js",
+    "optimize-images": "for i in ./src/static/photos/*.jpg; do convert \"$i\" -quality 80% \"${i%.jpg}.jpg\"; done",
+    "format:check": "prettier --check src/**/*.{js,scss} --cache",
+    "format:write": "prettier --write src/**/*.{js,scss} --cache",
+    "illustrations": "node .build/import-illustrations.js",
+    "build:html": "eleventy",
+    "watch:html": "eleventy --watch --incremental"
   },
   "repository": {
     "type": "git",
@@ -44,9 +48,10 @@
     "url": "https://github.com/sponsors/codecalm"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=20"
   },
   "files": [
+    "docs/**/*",
     "dist/**/*",
     "src/js/**/*.{js,map}",
     "src/img/**/*.{svg}",
@@ -62,19 +67,19 @@
     "files": [
       {
         "path": "./dist/css/tabler.css",
-        "maxSize": "65 kB"
+        "maxSize": "75 kB"
       },
       {
         "path": "./dist/css/tabler.min.css",
-        "maxSize": "60 kB"
+        "maxSize": "70 kB"
       },
       {
         "path": "./dist/css/tabler.rtl.css",
-        "maxSize": "65 kB"
+        "maxSize": "75 kB"
       },
       {
         "path": "./dist/css/tabler.rtl.min.css",
-        "maxSize": "60 kB"
+        "maxSize": "70 kB"
       },
       {
         "path": "./dist/css/tabler-flags.css",
@@ -93,12 +98,20 @@
         "maxSize": "2 kB"
       },
       {
+        "path": "./dist/css/tabler-socials.css",
+        "maxSize": "2 kB"
+      },
+      {
+        "path": "./dist/css/tabler-socials.min.css",
+        "maxSize": "2 kB"
+      },
+      {
         "path": "./dist/css/tabler-vendors.css",
-        "maxSize": "7 kB"
+        "maxSize": "7.5 kB"
       },
       {
         "path": "./dist/css/tabler-vendors.min.css",
-        "maxSize": "6 kB"
+        "maxSize": "6.5 kB"
       },
       {
         "path": "./dist/js/tabler.js",
@@ -119,80 +132,92 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "^7.20.2",
-    "@babel/preset-env": "^7.20.2",
-    "@rollup/plugin-commonjs": "^23.0.2",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "@rollup/plugin-replace": "^5.0.1",
-    "@rollup/pluginutils": "^5.0.2",
+    "@11ty/eleventy": "^3.0.0",
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@changesets/cli": "^2.27.11",
+    "@rollup/plugin-commonjs": "^24.1.0",
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-replace": "^5.0.7",
     "@rollup/stream": "^2.0.0",
-    "@tabler/icons": "^1.113.0",
-    "apexcharts": "^3.36.3",
-    "autoprefixer": "^10.4.13",
-    "autosize": "^5.0.1",
-    "browser-sync": "^2.27.10",
-    "bundlewatch": "^0.3.3",
-    "choices.js": "^10.1.0",
-    "chromatic": "^6.11.4",
-    "countup.js": "^2.3.2",
-    "cross-spawn": "^7.0.3",
+    "apexcharts": "^4.3.0",
+    "autoprefixer": "^10.4.20",
+    "autosize": "^6.0.1",
+    "browser-sync": "^2.29.3",
+    "bundlewatch": "^0.4.0",
+    "choices.js": "^11.0.3",
+    "countup.js": "^2.8.0",
+    "cross-spawn": "^7.0.6",
     "dropzone": "^6.0.0-beta.2",
     "flatpickr": "^4.6.13",
-    "fslightbox": "^3.3.1",
+    "fslightbox": "^3.4.2",
+    "glob": "^10.4.5",
     "gulp": "^4.0.2",
     "gulp-clean": "^0.4.0",
     "gulp-clean-css": "^4.3.0",
     "gulp-debug": "^4.0.0",
     "gulp-header": "^2.0.9",
-    "gulp-postcss": "^9.0.1",
+    "gulp-postcss": "^9.1.0",
     "gulp-purgecss": "^5.0.0",
     "gulp-rename": "^2.0.0",
+    "gulp-replace": "^1.1.4",
     "gulp-rtlcss": "^2.0.0",
     "gulp-sass": "^5.1.0",
     "gulp-terser": "^2.1.0",
-    "imageoptim-cli": "^3.0.7",
-    "imask": "^6.4.3",
-    "jsvectormap": "^1.5.1",
+    "html-minifier": "^4.0.0",
+    "imageoptim-cli": "^3.1.9",
+    "imask": "^7.6.1",
+    "js-beautify": "^1.15.1",
+    "jsvectormap": "^1.6.0",
     "list.js": "^2.3.1",
     "litepicker": "^2.0.12",
-    "nouislider": "^15.6.1",
-    "plyr": "^3.7.3",
-    "postcss": "^8.4.19",
-    "release-it": "^15.5.0",
+    "nouislider": "^15.8.1",
+    "plyr": "^3.7.8",
+    "postcss": "^8.5.1",
+    "prettier": "^2.8.8",
+    "release-it": "^15.11.0",
     "request": "^2.88.2",
-    "rollup": "^2.79.1",
+    "rollup": "2.79.2",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-cleanup": "^3.2.1",
-    "sass": "^1.56.1",
-    "tinymce": "^6.2.0",
-    "tom-select": "^2.2.2",
+    "sass": "1.71.0",
+    "star-rating.js": "^4.3.1",
+    "tinymce": "^7.6.0",
+    "tom-select": "^2.4.1",
+    "typed.js": "^2.1.0",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
-    "yaml": "^2.1.3",
-    "yargs": "^17.6.2"
+    "yargs": "^17.7.2"
   },
   "dependencies": {
-    "@popperjs/core": "^2.11.6",
-    "bootstrap": "~5.2.2"
+    "@popperjs/core": "^2.11.8",
+    "@tabler/icons": "^3.29.0",
+    "bootstrap": "5.3.3"
   },
   "peerDependencies": {
-    "apexcharts": "^3.36.3",
-    "autosize": "^5.0.1",
-    "choices.js": "^10.1.0",
-    "countup.js": "^2.3.2",
+    "@melloware/coloris": "^0.19.1",
+    "apexcharts": "^3.40.0",
+    "autosize": "^6.0.1",
+    "choices.js": "^10.2.0",
+    "countup.js": "^2.6.2",
     "dropzone": "^6.0.0-beta.2",
     "flatpickr": "^4.6.13",
-    "fslightbox": "^3.3.1",
-    "imask": "^6.4.3",
-    "jsvectormap": "^1.5.1",
+    "fslightbox": "^3.4.1",
+    "imask": "^6.6.1",
+    "jsvectormap": "^1.5.3",
     "list.js": "^2.3.1",
     "litepicker": "^2.0.12",
-    "nouislider": "^15.6.1",
-    "plyr": "^3.7.3",
-    "tinymce": "^6.2.0",
-    "tom-select": "^2.2.2"
+    "nouislider": "^15.7.0",
+    "plyr": "^3.7.8",
+    "star-rating.js": "^4.3.0",
+    "tinymce": "^6.4.2 || ^7.0.0",
+    "tom-select": "^2.2.2",
+    "typed.js": "^2.1.0"
   },
   "peerDependenciesMeta": {
+    "@melloware/coloris": {
+      "optional": true
+    },
     "apexcharts": {
       "optional": true
     },
@@ -217,6 +242,9 @@
     "imask": {
       "optional": true
     },
+    "jsvectormap": {
+      "optional": true
+    },
     "list.js": {
       "optional": true
     },
@@ -226,21 +254,18 @@
     "nouislider": {
       "optional": true
     },
-    "tom-select": {
+    "plyr": {
       "optional": true
     },
     "tinymce": {
       "optional": true
     },
-    "jsvectormap": {
+    "tom-select": {
       "optional": true
     },
-    "plyr": {
+    "star-rating.js": {
       "optional": true
     }
-  },
-  "resolutions": {
-    "**/**/node-gyp": "^5.0.0"
   },
   "release-it": {
     "hooks": {
@@ -255,5 +280,8 @@
     "github": {
       "release": true
     }
+  },
+  "directories": {
+    "doc": "docs"
   }
 }

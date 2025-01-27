@@ -6,10 +6,15 @@
   }
 
   .bg-#{"" + $color}-lt {
-    --#{$prefix}bg-opacity: .1;
+    --#{$prefix}bg-opacity: 1;
     --#{$prefix}text-opacity: 1;
-    color: rgba(var(--#{$prefix}#{$color}-rgb, var(--#{$prefix}text-opacity))) !important;
-    background-color: rgba(var(--#{$prefix}#{$color}-rgb), var(--#{$prefix}bg-opacity)) !important;
+    color: rgba(var(--#{$prefix}#{$color}-rgb), var(--#{$prefix}text-opacity)) !important;
+    background-color: rgba(var(--#{$prefix}#{$color}-lt-rgb), var(--#{$prefix}bg-opacity)) !important;
+  }
+
+  .border-#{"" + $color} {
+    --#{$prefix}border-opacity: 1;
+    border-color: rgba(var(--#{$prefix}#{$color}-rgb), var(--#{$prefix}border-opacity)) !important;
   }
 }
 
@@ -31,6 +36,6 @@
   }
 
   .text-#{"" + $color}-fg {
-    color: color-contrast($value) !important;
+    color: $value !important;
   }
 }

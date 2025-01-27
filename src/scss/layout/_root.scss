@@ -2,13 +2,24 @@
 :host {
   font-size: 16px;
   height: 100%;
+}
 
+:root,
+:host,
+[data-bs-theme="light"] {
   @each $name, $color in map-merge($theme-colors, $gray-colors) {
     --#{$prefix}#{$name}: #{$color};
+    --#{$prefix}#{$name}-rgb: #{to-rgb($color)};
     --#{$prefix}#{$name}-fg: #{if(contrast-ratio($color) > $min-contrast-ratio, var(--#{$prefix}light), var(--#{$prefix}dark))};
     --#{$prefix}#{$name}-darken: #{theme-color-darker($color)};
-    --#{$prefix}#{$name}-rgb: #{to-rgb($color)};
+    --#{$prefix}#{$name}-lt: #{theme-color-lighter($color)};
+    --#{$prefix}#{$name}-lt-rgb: #{to-rgb(theme-color-lighter($color))};
   }
+
+  @each $name, $value in $spacers {
+    --#{$prefix}spacer-#{$name}: #{$value};
+  }
+  --#{$prefix}spacer: #{$spacer};
 
   --#{$prefix}bg-surface: #{$bg-surface};
   --#{$prefix}bg-surface-secondary: #{$bg-surface-secondary};
@@ -17,8 +28,10 @@
   --#{$prefix}bg-forms: var(--#{$prefix}bg-surface);
 
   --#{$prefix}border-color: #{$border-color};
-  --#{$prefix}border-color-light: #{$border-color-light};
-  --#{$prefix}border-color-active: #{$border-color-active};
+  --#{$prefix}border-color-translucent: #{$border-color-translucent};
+  --#{$prefix}border-dark-color: #{$border-dark-color};
+  --#{$prefix}border-dark-color-translucent: #{$border-dark-color-translucent};
+  --#{$prefix}border-active-color: #{$border-active-color};
 
   --#{$prefix}icon-color: #{$icon-color};
 
@@ -30,11 +43,16 @@
   --#{$prefix}code-color: #{$code-color};
   --#{$prefix}code-bg: #{$code-bg};
 
-  --#{$prefix}content-padding: #{$content-padding};
-  --#{$prefix}dark-mode-border-color: #{$dark-mode-border-color};
-  --#{$prefix}dark-mode-border-color-light: #{$dark-mode-border-color-light};
-  --#{$prefix}dark-mode-border-color-active: #{$dark-mode-border-color-active};
+  --#{$prefix}dark-mode-border-color: #{$border-color-dark};
+  --#{$prefix}dark-mode-border-color-translucent: #{$border-color-translucent-dark};
+  --#{$prefix}dark-mode-border-active-color: #{$border-active-color-dark};
+  --#{$prefix}dark-mode-border-dark-color: #{$border-dark-color-dark};
 
+  --#{$prefix}page-padding: #{$page-padding};
+  --#{$prefix}page-padding-y: #{$page-padding-y};
+  @include media-breakpoint-down($cards-grid-breakpoint) {
+    --#{$prefix}page-padding: #{$page-padding-sm};
+  }
 
   @each $name, $value in $font-weights {
     --#{$prefix}font-weight-#{$name}: #{$value};
@@ -48,7 +66,7 @@
     --#{$prefix}line-height-#{$name}: #{$value};
   }
 
-  @each $name, $value in $shadows {
+  @each $name, $value in $box-shadows {
     --#{$prefix}#{$name}: #{$value};
   }
 }

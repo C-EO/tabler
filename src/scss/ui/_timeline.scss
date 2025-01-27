@@ -15,14 +15,14 @@
   position: relative;
 
   &:not(:last-child) {
-    margin-bottom: var(--#{$prefix}content-padding);
+    margin-bottom: var(--#{$prefix}page-padding);
 
     &:before {
       content: "";
       position: absolute;
       top: var(--#{$prefix}timeline-icon-size);
       left: calc(var(--#{$prefix}timeline-icon-size) / 2);
-      bottom: calc(-1 * var(--#{$prefix}content-padding));
+      bottom: calc(-1 * var(--#{$prefix}page-padding));
       width: var(--#{$prefix}border-width);
       background-color: var(--#{$prefix}border-color);
       border-radius: var(--#{$prefix}border-radius);
@@ -38,13 +38,13 @@
   width: var(--#{$prefix}timeline-icon-size, $avatar-size);
   height: var(--#{$prefix}timeline-icon-size, $avatar-size);
   background: var(--#{$prefix}gray-200);
-  color: var(--#{$prefix}muted);
+  color: var(--#{$prefix}secondary);
   border-radius: var(--#{$prefix}border-radius);
   z-index: 5
 }
 
 .timeline-event-card {
-  margin-left: calc(var(--#{$prefix}timeline-icon-size, $avatar-size) + var(--#{$prefix}content-padding));
+  margin-left: calc(var(--#{$prefix}timeline-icon-size, $avatar-size) + var(--#{$prefix}page-padding));
 }
 
 //
